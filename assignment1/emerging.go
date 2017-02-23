@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"runtime"
 	"io/ioutil"
 	"math/rand"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,16 +16,13 @@ import (
 type ReduceFunc func(key1 string, val1 int, key2 string, val2 int) (string, int)
 
 var (
-	arg_chan = flag.Bool("chan", false, "use the channel map")
-	arg_lock = flag.Bool("lock", false, "use the locking map")
-
 	arg_askers      = flag.Int("askers", 1, "number of asker goroutines")
 	arg_askdelay    = flag.Int("askdelay", 1000, "the delay in milliseconds for askers")
 	arg_reducedelay = flag.Int("reducedelay", 1000, "the delay in milliseconds for reducers")
 	arg_askfile     = flag.String("askfile", "data/ask.txt", "the file the askers should query from")
 
 	arg_readers = flag.Int("readers", 4, "number of reader goroutines")
-	arg_infiles = flag.String("infiles", "", "comma separated list of files to fill map with")
+	arg_infiles = flag.String("infiles", "data/pg1107.txt,data/pg1128.txt,data/pg1524.txt,data/pg2242.txt,data/pg2265.txt,data/pg1041.txt,data/pg1112.txt,data/pg1129.txt,data/pg2235.txt,data/pg2243.txt,data/pg2267.txt,data/pg1103.txt,data/pg1120.txt,data/pg1514.txt,data/pg2240.txt,data/pg2264.txt", "comma separated list of files to fill map with")
 
 	totalWords   int64
 	totalQueries int64
@@ -47,21 +44,14 @@ type EmergingMap interface {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	runtime.GOMAXPROCS(8)
+	runtime.GOMAXPROCS(runtime.NumCPU() * 2)
 	flag.Parse()
 	fmt.Println("Concurrent Maps")
 	fmt.Println("--------------------\n")
 
 	fmt.Println("Creating Map")
 	var emap EmergingMap
-	if *arg_chan {
-		emap = NewChannelMap()
-	} else if *arg_lock {
-		// emap = NewLockingMap()
-	} else {
-		fmt.Println("No map type specified... exiting")
-		return
-	}
+	emap = NewChannelMap()
 
 	go emap.Listen()
 
@@ -135,6 +125,13 @@ func reader(filename string, emap EmergingMap) {
 
 func max_word(w1 string, c1 int, w2 string, c2 int) (string, int) {
 	if c1 > c2 {
+		return w1, c1
+	}
+	return w2, c2
+}
+
+func min_word(w1 string, c1 int, w2 string, c2 int) (string, int) {
+	if c1 < c2 {
 		return w1, c1
 	}
 	return w2, c2
