@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"runtime"
 	"io/ioutil"
 	"math/rand"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -44,7 +44,7 @@ type EmergingMap interface {
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	runtime.GOMAXPROCS(runtime.NumCPU() * 2)
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
 	fmt.Println("Concurrent Maps")
 	fmt.Println("--------------------\n")
@@ -112,7 +112,7 @@ func reader(filename string, emap EmergingMap) {
 		// }
 		words := bytes.Fields(line)
 		for _, word := range words {
-			time.Sleep(time.Millisecond)
+			time.Sleep(time.Nanosecond)
 			emap.AddWord(string(word))
 			cnt := atomic.AddInt64(&totalWords, 1)
 			if cnt%1000 == 0 {
